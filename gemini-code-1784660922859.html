@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suera Browser</title>
+    <style>
+        /* ==========================================================================
+           1. ПЕРЕМЕННЫЕ И ОСНОВНЫЕ СТИЛИ (CSS VARIABLES & BASE STYLES)
+           ========================================================================== */
+        :root {
+            --bg-primary: #121214;
+            --bg-secondary: #1a1a1e;
+            --bg-tertiary: #26262b;
+            --bg-hover: #323238;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --accent-light: rgba(99, 102, 241, 0.15);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --border-color: #2e2e35;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --radius-full: 9999px;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.5);
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --ui-scale: 1;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            --bg-hover: #e2e8f0;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --accent-light: rgba(79, 70, 229, 0.1);
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border-color: #cbd5e1;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            font-size: calc(14px * var(--ui-scale));
+        }
+
+        button, input, select {
+            font-family: inherit;
+            font-size: inherit;
+            color: inherit;
+            outline: none;
+            border: none;
+            background: none;
+        }
+
+        button {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+        }
+
+        button:hover {
+            background-color: var(--bg-hover);
+        }
+
+        button:active {
+            transform: scale(0.96);
+        }
+
+        /* ==========================================================================
+           2. ВЕРХНЯЯ ПАНЕЛЬ И ВКЛАДКИ (TOP BAR & TABS)
+           ========================================================================== */
+        .browser-header {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .tabs-bar {
+            display: flex;
+            align-items: center;
+            padding: 6px 6px 0 6px;
+            gap: 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .tabs-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 12px;
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--accent);
+            letter-spacing: 0.5px;
+        }
+
+        .brand-logo svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .tabs-container {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background-color: transparent;
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+            min-width: 140px;
+            max-width: 220px;
+            flex: 1;
+            height: 34px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            position: relative;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+            border-bottom: none;
+        }
+
+        .tab:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+            font-weight: 500;
+        }
+
+        .tab-favicon {
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        .tab-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .tab-close {
+            width: 18px;
+            height: 18px;
+            border-radius: var(--radius-full);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .tab:hover .tab-close, .tab.active .tab-close {
+            opacity: 1;
+        }
+
+        .tab-close:hover {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .new-tab-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: var(--radius-full);
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        /* ==========================================================================
+           3. НАВИГАЦИОННАЯ ПАНЕЛЬ (NAVIGATION BAR)
+           ========================================================================== */
+        .nav-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background-color: var(--bg-primary);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .nav-button {
+            width: 32px;
+            height: 32px;
+            color: var(--text-secondary);
+            border-radius: var(--radius-full);
+        }
+
+        .nav-button:hover {
+            color: var(--text-primary);
+            background-color: var(--bg-tertiary);
+        }
+
+        .nav-button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .address-bar-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .address-bar {
+            width: 100%;
+            height: 36px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-full);
+            padding: 0 40px 0 36px;
+            color: var(--text-primary);
+            font-size: 13px;
+            transition: var(--transition);
+        }
+
+        .address-bar:focus {
+            border-color: var(--accent);
+            background-color: var(--bg-tertiary);
+            box-shadow: 0 0 0 3px var(--accent-light);
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .site-icon {
+            position: absolute;
+            left: 12px;
+            width: 16px;
+            height: 16px;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .bookmark-btn {
+            position: absolute;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            color: var(--text-muted);
+            border-radius: var(--radius-full);
+        }
+
+        .bookmark-btn.active {
+            color: var(--warning);
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            background-color: var(--accent);
+            width: 0%;
+            transition: width 0.2s ease;
+            z-index: 101;
+        }
+
+        /* ==========================================================================
+           4. ПАНЕЛЬ ЗАКЛАДОК (BOOKMARKS BAR)
+           ========================================================================== */
+        .bookmarks-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .bookmarks-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .bookmark-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .bookmark-item:hover {
+            background-color: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .bookmark-item img {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* ==========================================================================
+           5. ОСНОВНАЯ ОБЛАСТЬ КОНТЕНТА (VIEWPORT & IFRAME)
+           ========================================================================== */
+        .content-area {
+            flex: 1;
+            position: relative;
+            background-color: var(--bg-primary);
+            overflow: hidden;
+        }
+
+        .view-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        .view-container.active {
+            display: block;
+        }
+
+        iframe.web-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: #ffffff;
+        }
+
+        /* ==========================================================================
+           6. ГЛАВНАЯ СТРАНИЦА (HOME PAGE / NEW TAB)
+           ========================================================================== */
+        .home-page {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: radial-gradient(circle at center, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            overflow-y: auto;
+        }
+
+        .home-clock {
+            font-size: 64px;
+            font-weight: 200;
+            letter-spacing: -1px;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .home-date {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            text-transform: capitalize;
+        }
+
+        .home-logo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .home-logo svg {
+            width: 56px;
+            height: 56px;
+            fill: var(--accent);
+        }
+
+        .home-logo h1 {
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .home-search-box {
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+            margin-bottom: 40px;
+        }
+
+        .home-search-input {
+            width: 100%;
+            height: 50px;
+            padding: 0 50px 0 20px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-full);
+            color: var(--text-primary);
+            font-size: 15px;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+        }
+
+        .home-search-input:focus {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-lg), 0 0 0 3px var(--accent-light);
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .home-search-btn {
+            position: absolute;
+            right: 8px;
+            top: 7px;
+            width: 36px;
+            height: 36px;
+            background-color: var(--accent);
+            color: #ffffff;
+            border-radius: var(--radius-full);
+        }
+
+        .home-search-btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 20px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .shortcut-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .shortcut-card:hover {
+            background-color: var(--bg-tertiary);
+            transform: translateY(-2px);
+        }
+
+        .shortcut-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            background-color: var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .shortcut-icon img {
+            width: 24px;
+            height: 24px;
+        }
+
+        .shortcut-title {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        /* ==========================================================================
+           7. ВСПЛЫВАЮЩИЕ ОКНА И МЕНЮ (MODALS & DROPDOWNS)
+           ========================================================================== */
+        .dropdown-menu {
+            position: absolute;
+            top: 50px;
+            right: 12px;
+            width: 240px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            display: none;
+            flex-direction: column;
+            padding: 6px;
+            z-index: 1000;
+            animation: fadeIn 0.15s ease;
+        }
+
+        .dropdown-menu.active {
+            display: flex;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .dropdown-item svg {
+            width: 16px;
+            height: 16px;
+            color: var(--text-secondary);
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 4px 0;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            animation: slideUp 0.2s ease;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .setting-group {
+            margin-bottom: 20px;
+        }
+
+        .setting-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .setting-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .setting-control select, .setting-control input[type="text"], .setting-control input[type="password"] {
+            width: 100%;
+            height: 38px;
+            padding: 0 12px;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+        }
+
+        .setting-control select:focus, .setting-control input[type="text"]:focus, .setting-control input[type="password"]:focus {
+            border-color: var(--accent);
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 4px;
+            background-color: var(--bg-tertiary);
+        }
+
+        .list-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow: hidden;
+            margin-right: 12px;
+        }
+
+        .list-item-title {
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .list-item-url {
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .list-item-action {
+            color: var(--text-muted);
+            padding: 4px;
+        }
+
+        .list-item-action:hover {
+            color: var(--danger);
+        }
+
+        /* ==========================================================================
+           8. УВЕДОМЛЕНИЯ И КОНТЕКСТНОЕ МЕНЮ
+           ========================================================================== */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 3000;
+            pointer-events: none;
+        }
+
+        .toast {
+            padding: 12px 16px;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-md);
+            color: var(--text-primary);
+            font-size: 13px;
+            pointer-events: auto;
+            animation: slideInRight 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .context-menu {
+            position: fixed;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-lg);
+            padding: 4px;
+            z-index: 4000;
+            display: none;
+            flex-direction: column;
+            min-width: 160px;
+        }
+
+        .context-menu.active {
+            display: flex;
+        }
+
+        /* ==========================================================================
+           9. АНИМАЦИИ (ANIMATIONS)
+           ========================================================================== */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="browser-header">
+        <div class="tabs-bar">
+            <div class="brand-logo">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                Suera
+            </div>
+            <div class="tabs-container" id="tabsContainer"></div>
+            <button class="new-tab-btn" id="newTabBtn" title="Новая вкладка (Ctrl+T)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+        </div>
+
+        <div class="nav-bar">
+            <button class="nav-button" id="backBtn" title="Назад"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+            <button class="nav-button" id="forwardBtn" title="Вперед"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+            <button class="nav-button" id="reloadBtn" title="Обновить (Ctrl+R)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>
+            <button class="nav-button" id="homeBtn" title="Домашняя страница"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></button>
+
+            <div class="address-bar-container">
+                <svg class="site-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                <input type="text" class="address-bar" id="addressBar" placeholder="Введите адрес URL или поисковый запрос...">
+                <button class="bookmark-btn" id="bookmarkCurrentBtn" title="Добавить в закладки">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                </button>
+            </div>
+
+            <button class="nav-button" id="menuBtn" title="Меню Suera"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
+        </div>
+
+        <div class="bookmarks-bar" id="bookmarksBar"></div>
+        <div class="progress-bar" id="progressBar"></div>
+    </header>
+
+    <main class="content-area" id="contentArea"></main>
+
+    <div class="dropdown-menu" id="mainMenu">
+        <div class="dropdown-item" id="menuNewTab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Новая вкладка
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item" id="menuHistory">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            История
+        </div>
+        <div class="dropdown-item" id="menuBookmarks">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+            Закладки
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item" id="menuCrypto">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            Шифрование данных
+        </div>
+        <div class="dropdown-item" id="menuSettings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            Настройки
+        </div>
+        <div class="dropdown-item" id="menuClearData">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            Очистить данные
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item" id="menuAbout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            О программе
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="cryptoModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Управление ключами шифрования AES-256</h3>
+                <button class="nav-button closeModalBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label class="setting-label">Текущий мастер-ключ шифрования (Base64 / Key)</label>
+                    <div class="setting-control" style="display:flex; gap:8px;">
+                        <input type="password" id="cryptoKeyInput" placeholder="Мастер-пароль или секретный ключ..." readonly>
+                        <button style="padding:0 12px; background:var(--accent); border-radius:var(--radius-sm);" id="toggleKeyVis">Показать</button>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <button style="width:100%; height:38px; background:var(--accent); border-radius:var(--radius-sm); font-weight:600;" id="regenKeyBtn">Сгенерировать новый ключ AES-256</button>
+                </div>
+                <div class="setting-group">
+                    <label class="setting-label">Зашифрованные данные пользователя (AES-GCM)</label>
+                    <div class="setting-control">
+                        <input type="text" id="encryptedStoragePreview" readonly placeholder="Данные зашифрованы..." style="font-family:monospace; font-size:11px; color:var(--text-muted);">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Настройки Suera</h3>
+                <button class="nav-button closeModalBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label class="setting-label">Тема оформления</label>
+                    <div class="setting-control">
+                        <select id="settingTheme">
+                            <option value="dark">Темная</option>
+                            <option value="light">Светлая</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label class="setting-label">Размер интерфейса</label>
+                    <div class="setting-control">
+                        <select id="settingScale">
+                            <option value="0.9">Уменьшенный (90%)</option>
+                            <option value="1">Обычный (100%)</option>
+                            <option value="1.1">Увеличенный (110%)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label class="setting-label">Поисковая система</label>
+                    <div class="setting-control">
+                        <select id="settingSearchEngine">
+                            <option value="https://www.google.com/search?q=">Google</option>
+                            <option value="https://www.bing.com/search?q=">Bing</option>
+                            <option value="https://duckduckgo.com/?q=">DuckDuckGo</option>
+                            <option value="https://yandex.ru/search/?text=">Яндекс</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label class="setting-label">Домашняя страница</label>
+                    <div class="setting-control">
+                        <input type="text" id="settingHomepage" placeholder="suera://home или URL">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="listModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="listModalTitle">История</h3>
+                <button class="nav-button closeModalBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+            <div class="modal-body" id="listModalContent"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="aboutModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>О программе Suera</h3>
+                <button class="nav-button closeModalBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 30px;">
+                <div class="home-logo" style="justify-content: center; margin-bottom: 16px;">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                    <h1 style="font-size: 32px;">Suera</h1>
+                </div>
+                <p style="color: var(--text-secondary); margin-bottom: 8px;">Версия 1.1.0 (Encrypted Web Edition)</p>
+                <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 20px;">Защищенный браузер с аппаратным шифрованием ключей AES-GCM через WebCrypto API.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="context-menu" id="contextMenu">
+        <div class="dropdown-item" id="ctxBack">Назад</div>
+        <div class="dropdown-item" id="ctxForward">Вперед</div>
+        <div class="dropdown-item" id="ctxReload">Перезагрузить</div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item" id="ctxNewTab">Новая вкладка</div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        /* ==========================================================================
+           10. МОДУЛЬ ШИФРОВАНИЯ WEBCRYPTO (AES-GCM ENCRYPTION CORE)
+           ========================================================================== */
+        const CryptoModule = {
+            masterKey: null,
+            rawKeyString: '',
+
+            async init() {
+                let savedKey = localStorage.getItem('suera_crypto_key');
+                if (!savedKey) {
+                    savedKey = this.generateRandomKeyString();
+                    localStorage.setItem('suera_crypto_key', savedKey);
+                }
+                this.rawKeyString = savedKey;
+                this.masterKey = await this.importKey(savedKey);
+            },
+
+            generateRandomKeyString() {
+                const array = new Uint8Array(32); // 256 бит
+                window.crypto.getRandomValues(array);
+                return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+            },
+
+            async importKey(hexKey) {
+                const bytes = new Uint8Array(hexKey.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+                return await window.crypto.subtle.importKey(
+                    "raw",
+                    bytes,
+                    { name: "AES-GCM", length: 256 },
+                    false,
+                    ["encrypt", "decrypt"]
+                );
+            },
+
+            async encrypt(data) {
+                if (!this.masterKey) await this.init();
+                const encoder = new TextEncoder();
+                const encodedData = encoder.encode(JSON.stringify(data));
+                const iv = window.crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV
+                const encryptedContent = await window.crypto.subtle.encrypt(
+                    { name: "AES-GCM", iv: iv },
+                    this.masterKey,
+                    encodedData
+                );
+
+                const encryptedBytes = new Uint8Array(encryptedContent);
+                const combined = new Uint8Array(iv.length + encryptedBytes.length);
+                combined.set(iv);
+                combined.set(encryptedBytes, iv.length);
+
+                return btoa(String.fromCharCode.apply(null, combined));
+            },
+
+            async decrypt(encryptedBase64) {
+                if (!encryptedBase64) return null;
+                try {
+                    if (!this.masterKey) await this.init();
+                    const binaryString = atob(encryptedBase64);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+
+                    const iv = bytes.slice(0, 12);
+                    const data = bytes.slice(12);
+
+                    const decryptedContent = await window.crypto.subtle.decrypt(
+                        { name: "AES-GCM", iv: iv },
+                        this.masterKey,
+                        data
+                    );
+
+                    const decoder = new TextDecoder();
+                    return JSON.parse(decoder.decode(decryptedContent));
+                } catch (e) {
+                    console.error("Ошибка расшифровки данных:", e);
+                    return null;
+                }
+            }
+        };
+
+        /* ==========================================================================
+           11. ЛОГИКА ПРИЛОЖЕНИЯ (JAVASCRIPT BROWSER CORE)
+           ========================================================================== */
+        const DEFAULT_SETTINGS = {
+            theme: 'dark',
+            scale: '1',
+            searchEngine: 'https://www.google.com/search?q=',
+            homepage: 'suera://home'
+        };
+
+        const DEFAULT_SHORTCUTS = [
+            { title: 'Google', url: 'https://www.google.com', icon: 'https://www.google.com/favicon.ico' },
+            { title: 'YouTube', url: 'https://www.youtube.com', icon: 'https://www.youtube.com/favicon.ico' },
+            { title: 'Wikipedia', url: 'https://www.wikipedia.org', icon: 'https://www.wikipedia.org/favicon.ico' },
+            { title: 'GitHub', url: 'https://github.com', icon: 'https://github.com/favicon.ico' }
+        ];
+
+        let state = {
+            tabs: [],
+            activeTabId: null,
+            history: [],
+            bookmarks: [],
+            settings: DEFAULT_SETTINGS
+        };
+
+        const tabsContainer = document.getElementById('tabsContainer');
+        const contentArea = document.getElementById('contentArea');
+        const addressBar = document.getElementById('addressBar');
+        const backBtn = document.getElementById('backBtn');
+        const forwardBtn = document.getElementById('forwardBtn');
+        const reloadBtn = document.getElementById('reloadBtn');
+        const homeBtn = document.getElementById('homeBtn');
+        const newTabBtn = document.getElementById('newTabBtn');
+        const bookmarkCurrentBtn = document.getElementById('bookmarkCurrentBtn');
+        const bookmarksBar = document.getElementById('bookmarksBar');
+        const menuBtn = document.getElementById('menuBtn');
+        const mainMenu = document.getElementById('mainMenu');
+        const progressBar = document.getElementById('progressBar');
+
+        async function initApp() {
+            await CryptoModule.init();
+            await loadEncryptedState();
+            applySettings();
+            renderBookmarksBar();
+            createNewTab();
+            setupEventListeners();
+            startClock();
+        }
+
+        async function saveState() {
+            const encryptedHistory = await CryptoModule.encrypt(state.history);
+            const encryptedBookmarks = await CryptoModule.encrypt(state.bookmarks);
+            const encryptedSettings = await CryptoModule.encrypt(state.settings);
+
+            localStorage.setItem('suera_enc_history', encryptedHistory);
+            localStorage.setItem('suera_enc_bookmarks', encryptedBookmarks);
+            localStorage.setItem('suera_enc_settings', encryptedSettings);
+        }
+
+        async function loadEncryptedState() {
+            const encHistory = localStorage.getItem('suera_enc_history');
+            const encBookmarks = localStorage.getItem('suera_enc_bookmarks');
+            const encSettings = localStorage.getItem('suera_enc_settings');
+
+            if (encHistory) state.history = (await CryptoModule.decrypt(encHistory)) || [];
+            if (encBookmarks) state.bookmarks = (await CryptoModule.decrypt(encBookmarks)) || [];
+            if (encSettings) state.settings = (await CryptoModule.decrypt(encSettings)) || DEFAULT_SETTINGS;
+        }
+
+        function applySettings() {
+            document.documentElement.setAttribute('data-theme', state.settings.theme);
+            document.documentElement.style.setProperty('--ui-scale', state.settings.scale);
+            document.getElementById('settingTheme').value = state.settings.theme;
+            document.getElementById('settingScale').value = state.settings.scale;
+            document.getElementById('settingSearchEngine').value = state.settings.searchEngine;
+            document.getElementById('settingHomepage').value = state.settings.homepage;
+        }
+
+        function showToast(message) {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<span>${message}</span>`;
+            toastContainer.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function createNewTab(url = state.settings.homepage) {
+            const tabId = 'tab_' + Date.now();
+            const tab = {
+                id: tabId,
+                title: 'Новая вкладка',
+                url: url,
+                history: [url],
+                historyIndex: 0,
+                isLoading: false
+            };
+
+            state.tabs.push(tab);
+            renderTabElement(tab);
+            renderViewElement(tab);
+            switchTab(tabId);
+
+            if (url !== 'suera://home') {
+                loadUrlInTab(tabId, url);
+            }
+        }
+
+        function renderTabElement(tab) {
+            const tabEl = document.createElement('div');
+            tabEl.className = 'tab';
+            tabEl.id = `tab-header-${tab.id}`;
+            tabEl.onclick = () => switchTab(tab.id);
+
+            tabEl.innerHTML = `
+                <img class="tab-favicon" id="favicon-${tab.id}" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='%236366f1'/></svg>">
+                <span class="tab-title" id="title-${tab.id}">${tab.title}</span>
+                <button class="tab-close" onclick="closeTab('${tab.id}', event)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            `;
+
+            tabsContainer.appendChild(tabEl);
+        }
+
+        function renderViewElement(tab) {
+            const viewEl = document.createElement('div');
+            viewEl.className = 'view-container';
+            viewEl.id = `tab-view-${tab.id}`;
+
+            if (tab.url === 'suera://home') {
+                viewEl.innerHTML = getHomePageHTML(tab.id);
+            } else {
+                viewEl.innerHTML = `<iframe class="web-frame" id="iframe-${tab.id}" src="${tab.url}"></iframe>`;
+            }
+
+            contentArea.appendChild(viewEl);
+        }
+
+        function switchTab(tabId) {
+            state.activeTabId = tabId;
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
+
+            const activeTabEl = document.getElementById(`tab-header-${tabId}`);
+            const activeViewEl = document.getElementById(`tab-view-${tabId}`);
+
+            if (activeTabEl) activeTabEl.classList.add('active');
+            if (activeViewEl) activeViewEl.classList.add('active');
+
+            updateNavState();
+        }
+
+        function closeTab(tabId, event) {
+            if (event) event.stopPropagation();
+
+            const index = state.tabs.findIndex(t => t.id === tabId);
+            if (index === -1) return;
+
+            document.getElementById(`tab-header-${tabId}`)?.remove();
+            document.getElementById(`tab-view-${tabId}`)?.remove();
+
+            state.tabs.splice(index, 1);
+
+            if (state.tabs.length === 0) {
+                createNewTab();
+            } else if (state.activeTabId === tabId) {
+                const nextTab = state.tabs[Math.max(0, index - 1)];
+                switchTab(nextTab.id);
+            }
+        }
+
+        function getActiveTab() {
+            return state.tabs.find(t => t.id === state.activeTabId);
+        }
+
+        function navigate(url) {
+            const tab = getActiveTab();
+            if (!tab) return;
+
+            let formattedUrl = url.trim();
+
+            if (formattedUrl === 'suera://home') {
+                loadHomePage(tab);
+                return;
+            }
+
+            if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+                const isDomain = formattedUrl.includes('.') && !formattedUrl.includes(' ');
+                if (isDomain) {
+                    formattedUrl = 'https://' + formattedUrl;
+                } else {
+                    formattedUrl = state.settings.searchEngine + encodeURIComponent(formattedUrl);
+                }
+            }
+
+            if (tab.history[tab.historyIndex] !== formattedUrl) {
+                tab.history = tab.history.slice(0, tab.historyIndex + 1);
+                tab.history.push(formattedUrl);
+                tab.historyIndex = tab.history.length - 1;
+            }
+
+            loadUrlInTab(tab.id, formattedUrl);
+        }
+
+        function loadUrlInTab(tabId, url) {
+            const tab = state.tabs.find(t => t.id === tabId);
+            if (!tab) return;
+
+            tab.url = url;
+            tab.title = url;
+            tab.isLoading = true;
+
+            triggerProgressBar(30);
+
+            const viewEl = document.getElementById(`tab-view-${tabId}`);
+            if (viewEl) {
+                viewEl.innerHTML = `<iframe class="web-frame" id="iframe-${tabId}" src="${url}"></iframe>`;
+                
+                const iframe = document.getElementById(`iframe-${tabId}`);
+                
+                iframe.onload = () => {
+                    tab.isLoading = false;
+                    triggerProgressBar(100);
+                    
+                    try {
+                        const title = iframe.contentDocument.title;
+                        if (title) tab.title = title;
+                    } catch (e) {
+                        const parsedUrl = new URL(url);
+                        tab.title = parsedUrl.hostname;
+                    }
+
+                    updateTabUI(tab);
+                    addToGlobalHistory(tab.title, url);
+                };
+
+                iframe.onerror = () => {
+                    showToast('Сайт блокирует встроенный просмотр. Открытие в новой вкладке...');
+                    window.open(url, '_blank');
+                };
+            }
+
+            updateNavState();
+        }
+
+        function loadHomePage(tab) {
+            tab.url = 'suera://home';
+            tab.title = 'Новая вкладка';
+            const viewEl = document.getElementById(`tab-view-${tab.id}`);
+            if (viewEl) {
+                viewEl.innerHTML = getHomePageHTML(tab.id);
+            }
+            updateTabUI(tab);
+            updateNavState();
+        }
+
+        function updateTabUI(tab) {
+            const titleEl = document.getElementById(`title-${tab.id}`);
+            const faviconEl = document.getElementById(`favicon-${tab.id}`);
+
+            if (titleEl) titleEl.innerText = tab.title;
+            if (faviconEl && tab.url.startsWith('http')) {
+                const domain = new URL(tab.url).hostname;
+                faviconEl.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+            }
+
+            if (tab.id === state.activeTabId) {
+                updateNavState();
+            }
+        }
+
+        function updateNavState() {
+            const tab = getActiveTab();
+            if (!tab) return;
+
+            addressBar.value = tab.url === 'suera://home' ? '' : tab.url;
+            backBtn.disabled = tab.historyIndex <= 0;
+            forwardBtn.disabled = tab.historyIndex >= tab.history.length - 1;
+
+            const isBookmarked = state.bookmarks.some(b => b.url === tab.url);
+            bookmarkCurrentBtn.classList.toggle('active', isBookmarked);
+        }
+
+        function triggerProgressBar(percentage) {
+            progressBar.style.width = percentage + '%';
+            if (percentage >= 100) {
+                setTimeout(() => {
+                    progressBar.style.width = '0%';
+                }, 300);
+            }
+        }
+
+        function getHomePageHTML(tabId) {
+            const dateStr = new Date().toLocaleDateString('ru-RU', { weekday: 'long', month: 'long', day: 'numeric' });
+            
+            const shortcutsHTML = DEFAULT_SHORTCUTS.map(s => `
+                <div class="shortcut-card" onclick="navigate('${s.url}')">
+                    <div class="shortcut-icon"><img src="${s.icon}" onerror="this.src='data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'><circle cx=\'12\' cy=\'12\' r=\'10\' fill=\'%236366f1\'/></svg>'"></div>
+                    <div class="shortcut-title">${s.title}</div>
+                </div>
+            `).join('');
+
+            return `
+                <div class="home-page">
+                    <div class="home-clock" id="homeClock">00:00</div>
+                    <div class="home-date">${dateStr}</div>
+                    <div class="home-logo">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                        <h1>Suera</h1>
+                    </div>
+                    <div class="home-search-box">
+                        <input type="text" class="home-search-input" placeholder="Поиск в интернете или ввод URL..." onkeydown="if(event.key==='Enter') navigate(this.value)">
+                        <button class="home-search-btn" onclick="navigate(this.previousElementSibling.value)">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </button>
+                    </div>
+                    <div class="shortcuts-grid">
+                        ${shortcutsHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        function startClock() {
+            setInterval(() => {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                const clockEl = document.getElementById('homeClock');
+                if (clockEl) clockEl.innerText = timeStr;
+            }, 1000);
+        }
+
+        async function addToGlobalHistory(title, url) {
+            if (url === 'suera://home') return;
+            state.history.unshift({ title, url, time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) });
+            if (state.history.length > 100) state.history.pop();
+            await saveState();
+        }
+
+        async function toggleBookmark() {
+            const tab = getActiveTab();
+            if (!tab || tab.url === 'suera://home') return;
+
+            const index = state.bookmarks.findIndex(b => b.url === tab.url);
+            if (index >= 0) {
+                state.bookmarks.splice(index, 1);
+                showToast('Удалено из закладок');
+            } else {
+                state.bookmarks.push({ title: tab.title, url: tab.url });
+                showToast('Добавлено в закладки (Зашифровано AES-256)');
+            }
+            await saveState();
+            renderBookmarksBar();
+            updateNavState();
+        }
+
+        function renderBookmarksBar() {
+            bookmarksBar.innerHTML = '';
+            state.bookmarks.forEach(b => {
+                const item = document.createElement('div');
+                item.className = 'bookmark-item';
+                const domain = new URL(b.url).hostname;
+                item.innerHTML = `
+                    <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=16" onerror="this.style.display='none'">
+                    <span>${b.title}</span>
+                `;
+                item.onclick = () => navigate(b.url);
+                bookmarksBar.appendChild(item);
+            });
+        }
+
+        function openModal(modalId) {
+            closeAllModals();
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeAllModals() {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+            mainMenu.classList.remove('active');
+        }
+
+        function openCryptoModal() {
+            document.getElementById('cryptoKeyInput').value = CryptoModule.rawKeyString;
+            document.getElementById('encryptedStoragePreview').value = localStorage.getItem('suera_enc_history') || 'Нет данных';
+            openModal('cryptoModal');
+        }
+
+        function openHistoryModal() {
+            document.getElementById('listModalTitle').innerText = 'История просмотров (Зашифровано)';
+            const content = document.getElementById('listModalContent');
+            if (state.history.length === 0) {
+                content.innerHTML = '<p style="color:var(--text-muted); text-align:center;">История пуста</p>';
+            } else {
+                content.innerHTML = state.history.map((h, i) => `
+                    <div class="list-item">
+                        <div class="list-item-info">
+                            <div class="list-item-title">${h.title}</div>
+                            <div class="list-item-url">${h.url} - ${h.time}</div>
+                        </div>
+                        <button class="list-item-action" onclick="deleteHistoryItem(${i})">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                `).join('');
+            }
+            openModal('listModal');
+        }
+
+        function openBookmarksModal() {
+            document.getElementById('listModalTitle').innerText = 'Закладки (Зашифровано)';
+            const content = document.getElementById('listModalContent');
+            if (state.bookmarks.length === 0) {
+                content.innerHTML = '<p style="color:var(--text-muted); text-align:center;">Закладок пока нет</p>';
+            } else {
+                content.innerHTML = state.bookmarks.map((b, i) => `
+                    <div class="list-item">
+                        <div class="list-item-info" style="cursor:pointer;" onclick="navigate('${b.url}'); closeAllModals();">
+                            <div class="list-item-title">${b.title}</div>
+                            <div class="list-item-url">${b.url}</div>
+                        </div>
+                        <button class="list-item-action" onclick="deleteBookmarkItem(${i})">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                `).join('');
+            }
+            openModal('listModal');
+        }
+
+        async function deleteHistoryItem(index) {
+            state.history.splice(index, 1);
+            await saveState();
+            openHistoryModal();
+        }
+
+        async function deleteBookmarkItem(index) {
+            state.bookmarks.splice(index, 1);
+            await saveState();
+            renderBookmarksBar();
+            openBookmarksModal();
+            updateNavState();
+        }
+
+        async function clearAllData() {
+            if (confirm('Вы уверены, что хотите очистить все зашифрованные данные?')) {
+                state.history = [];
+                state.bookmarks = [];
+                await saveState();
+                renderBookmarksBar();
+                showToast('Данные очищены');
+                closeAllModals();
+            }
+        }
+
+        function setupEventListeners() {
+            backBtn.onclick = () => {
+                const tab = getActiveTab();
+                if (tab && tab.historyIndex > 0) {
+                    tab.historyIndex--;
+                    loadUrlInTab(tab.id, tab.history[tab.historyIndex]);
+                }
+            };
+
+            forwardBtn.onclick = () => {
+                const tab = getActiveTab();
+                if (tab && tab.historyIndex < tab.history.length - 1) {
+                    tab.historyIndex++;
+                    loadUrlInTab(tab.id, tab.history[tab.historyIndex]);
+                }
+            };
+
+            reloadBtn.onclick = () => {
+                const tab = getActiveTab();
+                if (tab) loadUrlInTab(tab.id, tab.url);
+            };
+
+            homeBtn.onclick = () => {
+                const tab = getActiveTab();
+                if (tab) loadHomePage(tab);
+            };
+
+            newTabBtn.onclick = () => createNewTab();
+            bookmarkCurrentBtn.onclick = toggleBookmark;
+
+            addressBar.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    navigate(addressBar.value);
+                    addressBar.blur();
+                }
+            };
+
+            menuBtn.onclick = (e) => {
+                e.stopPropagation();
+                mainMenu.classList.toggle('active');
+            };
+
+            document.addEventListener('click', (e) => {
+                if (!mainMenu.contains(e.target) && e.target !== menuBtn) {
+                    mainMenu.classList.remove('active');
+                }
+                const contextMenu = document.getElementById('contextMenu');
+                if (contextMenu) contextMenu.classList.remove('active');
+            });
+
+            document.getElementById('menuNewTab').onclick = () => { createNewTab(); mainMenu.classList.remove('active'); };
+            document.getElementById('menuHistory').onclick = openHistoryModal;
+            document.getElementById('menuBookmarks').onclick = openBookmarksModal;
+            document.getElementById('menuCrypto').onclick = openCryptoModal;
+            document.getElementById('menuSettings').onclick = () => openModal('settingsModal');
+            document.getElementById('menuClearData').onclick = clearAllData;
+            document.getElementById('menuAbout').onclick = () => openModal('aboutModal');
+
+            document.querySelectorAll('.closeModalBtn').forEach(btn => {
+                btn.onclick = closeAllModals;
+            });
+
+            // Настройки ключей шифрования
+            document.getElementById('toggleKeyVis').onclick = () => {
+                const input = document.getElementById('cryptoKeyInput');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    document.getElementById('toggleKeyVis').innerText = 'Скрыть';
+                } else {
+                    input.type = 'password';
+                    document.getElementById('toggleKeyVis').innerText = 'Показать';
+                }
+            };
+
+            document.getElementById('regenKeyBtn').onclick = async () => {
+                if (confirm('Генерация нового ключа зашифрует текущие данные заново. Продолжить?')) {
+                    const newKeyStr = CryptoModule.generateRandomKeyString();
+                    localStorage.setItem('suera_crypto_key', newKeyStr);
+                    await CryptoModule.init();
+                    await saveState();
+                    openCryptoModal();
+                    showToast('Новый ключ AES-256 сгенерирован!');
+                }
+            };
+
+            document.getElementById('settingTheme').onchange = async (e) => {
+                state.settings.theme = e.target.value;
+                await saveState();
+                applySettings();
+            };
+            document.getElementById('settingScale').onchange = async (e) => {
+                state.settings.scale = e.target.value;
+                await saveState();
+                applySettings();
+            };
+            document.getElementById('settingSearchEngine').onchange = async (e) => {
+                state.settings.searchEngine = e.target.value;
+                await saveState();
+            };
+            document.getElementById('settingHomepage').onchange = async (e) => {
+                state.settings.homepage = e.target.value || 'suera://home';
+                await saveState();
+            };
+
+            document.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                const contextMenu = document.getElementById('contextMenu');
+                contextMenu.style.top = `${e.clientY}px`;
+                contextMenu.style.left = `${e.clientX}px`;
+                contextMenu.classList.add('active');
+            });
+
+            document.getElementById('ctxBack').onclick = () => backBtn.click();
+            document.getElementById('ctxForward').onclick = () => forwardBtn.click();
+            document.getElementById('ctxReload').onclick = () => reloadBtn.click();
+            document.getElementById('ctxNewTab').onclick = () => createNewTab();
+
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    switch (e.key.toLowerCase()) {
+                        case 't':
+                            e.preventDefault();
+                            createNewTab();
+                            break;
+                        case 'w':
+                            e.preventDefault();
+                            if (state.activeTabId) closeTab(state.activeTabId);
+                            break;
+                        case 'l':
+                            e.preventDefault();
+                            addressBar.focus();
+                            addressBar.select();
+                            break;
+                        case 'r':
+                            e.preventDefault();
+                            reloadBtn.click();
+                            break;
+                    }
+                }
+            });
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
